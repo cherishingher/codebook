@@ -60,6 +60,16 @@ def demo_punch(db: Session = Depends(get_db)) -> dict:
     return {"punch": result.__dict__, "state": _state(db, data)}
 
 
+@router.post("/api/v1/demo/new-lesson")
+def demo_new_lesson(db: Session = Depends(get_db)) -> dict:
+    init_db()
+    data = _ensure_demo_data(db)
+    _create_active_lesson(db, data)
+    db.commit()
+    fresh = _ensure_demo_data(db)
+    return _state(db, fresh)
+
+
 @router.post("/api/v1/demo/absence-job")
 def demo_absence_job(db: Session = Depends(get_db)) -> dict:
     init_db()
@@ -154,30 +164,7 @@ def _ensure_demo_data(db: Session, create_missed_lesson: bool = False) -> dict:
         .order_by(Lesson.id.desc())
     )
     if lesson is None:
-        lesson = Lesson(
-            campus_id=campus.id,
-            course_id=course.id,
-            teacher_id=teacher.id,
-            title="数学一对一",
-            classroom_name="A101",
-            start_time=now + timedelta(minutes=5),
-            end_time=now + timedelta(minutes=95),
-            checkin_start_time=now - timedelta(minutes=10),
-            checkin_end_time=now + timedelta(minutes=30),
-            late_after_time=now + timedelta(minutes=10),
-            default_hour_cost=Decimal("1.00"),
-            status="scheduled",
-        )
-        db.add(lesson)
-        db.flush()
-        db.add(
-            LessonStudent(
-                lesson_id=lesson.id,
-                student_id=student.id,
-                planned_hour_cost=Decimal("1.00"),
-            )
-        )
-        db.flush()
+        lesson = _create_active_lesson(db, {"campus": campus, "student": student, "teacher": teacher, "course": course})
 
     if create_missed_lesson:
         missed = Lesson(
@@ -200,6 +187,49 @@ def _ensure_demo_data(db: Session, create_missed_lesson: bool = False) -> dict:
 
     db.commit()
     return {"campus": campus, "student": student, "teacher": teacher, "course": course, "account": account, "device": device, "lesson": lesson}
+
+
+def _create_active_lesson(db: Session, data: dict) -> Lesson:
+    now = datetime.now().replace(microsecond=0)
+    active_lessons = db.scalars(
+        select(Lesson)
+        .join(LessonStudent, LessonStudent.lesson_id == Lesson.id)
+        .where(
+            Lesson.campus_id == data["campus"].id,
+            LessonStudent.student_id == data["student"].id,
+            Lesson.checkin_start_time <= now,
+            Lesson.checkin_end_time >= now,
+            Lesson.status != "cancelled",
+        )
+    ).all()
+    for active_lesson in active_lessons:
+        active_lesson.status = "cancelled"
+
+    lesson = Lesson(
+        campus_id=data["campus"].id,
+        course_id=data["course"].id,
+        teacher_id=data["teacher"].id,
+        title=f"数学一对一 {now.strftime('%H:%M:%S')}",
+        classroom_name="A101",
+        start_time=now + timedelta(minutes=5),
+        end_time=now + timedelta(minutes=95),
+        checkin_start_time=now - timedelta(minutes=10),
+        checkin_end_time=now + timedelta(minutes=30),
+        late_after_time=now + timedelta(minutes=10),
+        default_hour_cost=Decimal("1.00"),
+        status="scheduled",
+    )
+    db.add(lesson)
+    db.flush()
+    db.add(
+        LessonStudent(
+            lesson_id=lesson.id,
+            student_id=data["student"].id,
+            planned_hour_cost=Decimal("1.00"),
+        )
+    )
+    db.flush()
+    return lesson
 
 
 def _state(db: Session, data: dict) -> dict:
@@ -302,6 +332,7 @@ DEMO_HTML = """
   <main>
     <div class="actions">
       <button onclick="seed()">生成/刷新演示数据</button>
+      <button class="secondary" onclick="newLesson()">新建一节可打卡课次</button>
       <button onclick="punch()">模拟 USB 摄像头打卡</button>
       <button class="warn" onclick="absence()">运行缺勤任务</button>
       <button class="secondary" onclick="loadState()">刷新页面数据</button>
@@ -384,6 +415,11 @@ DEMO_HTML = """
       const data = await api('/api/v1/demo/punch', { method: 'POST' });
       document.getElementById('result').textContent = JSON.stringify(data.punch, null, 2);
       render(data.state);
+    }
+    async function newLesson() {
+      const state = await api('/api/v1/demo/new-lesson', { method: 'POST' });
+      document.getElementById('result').textContent = '已新建一节可打卡课次，现在可以模拟 USB 摄像头打卡。';
+      render(state);
     }
     async function absence() {
       const data = await api('/api/v1/demo/absence-job', { method: 'POST' });
