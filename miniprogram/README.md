@@ -27,10 +27,28 @@ https://your-domain.example/api/v1
 页面结构：
 
 - 登录页：配置后端 API 地址，并生成演示数据。
-- 身份选择：进入学员/家长端、教师端、校区端。
-- 学员/家长端：查看课表、考勤状态、课时余额和课时流水。
-- 教师端：查看课次，并手动确认到课、迟到、缺勤、请假等消课规则。
-- 校区端：查看校区概览、模拟 USB 摄像头打卡、管理学员课时和课次。
+- 登录页：配置后端 API 地址，支持生成演示数据，也支持手动填写 campusId / studentId / teacherId 进入真实接口调试。
+- 身份选择：进入学员/家长端、教师端、校区端，并保留已填写的真实身份 ID。
+- 学员/家长端：通过真实接口查看课表、考勤状态、课时余额和课时流水；接口失败时回退演示数据。
+- 教师端：通过真实接口查看课次、快捷新建课次，并逐个学员确认到课、迟到、缺勤、请假。
+- 校区端：通过真实接口查看校区看板、学员列表、创建学员、开课时账户/加课时、创建课次、保存消课规则、运行缺勤任务。
+
+当前小程序已经接入的真实接口：
+
+- `/campus/dashboard`
+- `/campus/students`
+- `/campus/courses`
+- `/campus/teachers`
+- `/campus/lessons`
+- `/campus/hour-accounts`
+- `/campus/hour-ledgers`
+- `/campus/deduction-rules`
+- `/teacher/lessons`
+- `/teacher/lessons/{lesson_id}/attendance/confirm`
+- `/learner/dashboard`
+- `/learner/lessons`
+- `/learner/hour-accounts`
+- `/learner/hour-ledgers`
 
 本地类型检查：
 

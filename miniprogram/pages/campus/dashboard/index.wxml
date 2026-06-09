@@ -2,10 +2,11 @@
   <view class="panel">
     <view class="title">校区看板</view>
     <view class="muted">{{campusName}} · {{deviceName}}</view>
+    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
   </view>
   <view class="metric-grid">
     <view class="metric">
-      <view class="metric-label">剩余课时</view>
+      <view class="metric-label">{{isRealMode ? '应到人次' : '剩余课时'}}</view>
       <view class="metric-value">{{balanceText}}</view>
     </view>
     <view class="metric">
@@ -13,9 +14,27 @@
       <view class="metric-value">{{deviceStatus}}</view>
     </view>
   </view>
-  <view class="section-title">演示操作</view>
+  <view class="metric-grid">
+    <view class="metric">
+      <view class="metric-label">今日课次</view>
+      <view class="metric-value">{{todayLessons}}</view>
+    </view>
+    <view class="metric">
+      <view class="metric-label">已到/迟到</view>
+      <view class="metric-value">{{presentCount}}/{{lateCount}}</view>
+    </view>
+    <view class="metric">
+      <view class="metric-label">缺勤</view>
+      <view class="metric-value">{{absentCount}}</view>
+    </view>
+    <view class="metric">
+      <view class="metric-label">已消课时</view>
+      <view class="metric-value">{{deductedHours}}</view>
+    </view>
+  </view>
+  <view class="section-title">操作</view>
   <view class="button" bindtap="newLesson">新建一节可打卡课次</view>
-  <view class="button secondary" bindtap="punch">模拟 USB 摄像头打卡</view>
+  <view class="button secondary" bindtap="punch">{{isRealMode ? '查看真实打卡说明' : '模拟 USB 摄像头打卡'}}</view>
   <view class="button warning" bindtap="runAbsence">运行缺勤任务</view>
   <view class="section-title">管理入口</view>
   <view class="panel" bindtap="goStudents">学员管理</view>

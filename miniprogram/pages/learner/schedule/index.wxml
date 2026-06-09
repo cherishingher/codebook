@@ -2,10 +2,11 @@
   <view class="panel">
     <view class="title">课表</view>
     <view class="muted">{{studentName}} · {{courseName}}</view>
+    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
   </view>
   <view wx:for="{{lessons}}" wx:key="id" class="list-item">
     <view class="row">
-      <view class="item-title">课次 #{{item.lesson_id}}</view>
+      <view class="item-title">{{item.title || '课次'}} #{{item.lesson_id}}</view>
       <view class="tag {{item.tagClass}}">{{item.attendanceText}}</view>
     </view>
     <view class="item-meta">消课状态：{{item.deductionText}}</view>

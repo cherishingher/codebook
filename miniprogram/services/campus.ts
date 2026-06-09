@@ -26,6 +26,36 @@ export type DeductionRulePayload = {
   exception_action: 'deduct' | 'not_deduct' | 'manual_required'
 }
 
+export type StudentCreatePayload = {
+  campus_id: number
+  name: string
+  student_no?: string
+  phone?: string
+}
+
+export type TeacherCreatePayload = {
+  campus_id: number
+  name: string
+  phone?: string
+  title?: string
+}
+
+export type CourseCreatePayload = {
+  campus_id: number
+  name: string
+  subject?: string
+  default_duration?: number
+  default_hour_cost?: string
+}
+
+export type HourAccountCreatePayload = {
+  campus_id: number
+  student_id: number
+  course_id: number
+  initial_hours: string
+  reason: string
+}
+
 export function getCampusDashboard(campusId: number) {
   return request(`/campus/dashboard?campus_id=${campusId}`)
 }
@@ -35,12 +65,33 @@ export function getCampusStudents(campusId: number, keyword = '') {
   return request(`/campus/students?campus_id=${campusId}${keywordPart}`)
 }
 
+export function createCampusStudent(payload: StudentCreatePayload) {
+  return request('/campus/students', {
+    method: 'POST',
+    data: payload as unknown as Record<string, unknown>
+  })
+}
+
 export function getCampusTeachers(campusId: number) {
   return request(`/campus/teachers?campus_id=${campusId}`)
 }
 
+export function createCampusTeacher(payload: TeacherCreatePayload) {
+  return request('/campus/teachers', {
+    method: 'POST',
+    data: payload as unknown as Record<string, unknown>
+  })
+}
+
 export function getCampusCourses(campusId: number) {
   return request(`/campus/courses?campus_id=${campusId}`)
+}
+
+export function createCampusCourse(payload: CourseCreatePayload) {
+  return request('/campus/courses', {
+    method: 'POST',
+    data: payload as unknown as Record<string, unknown>
+  })
 }
 
 export function getCampusLessons(campusId: number) {
@@ -61,6 +112,13 @@ export function createCampusLesson(payload: LessonCreatePayload) {
 export function getCampusHourAccounts(campusId: number, studentId?: number) {
   const studentPart = studentId ? `&student_id=${studentId}` : ''
   return request(`/campus/hour-accounts?campus_id=${campusId}${studentPart}`)
+}
+
+export function createCampusHourAccount(payload: HourAccountCreatePayload) {
+  return request('/campus/hour-accounts', {
+    method: 'POST',
+    data: payload as unknown as Record<string, unknown>
+  })
 }
 
 export function getCampusHourLedgers(campusId: number, studentId?: number) {
@@ -88,4 +146,8 @@ export function upsertDeductionRule(payload: DeductionRulePayload) {
     method: 'POST',
     data: payload as unknown as Record<string, unknown>
   })
+}
+
+export function runAbsenceJob() {
+  return request<{ created: number }>('/dev/run-absence-job', { method: 'POST' })
 }

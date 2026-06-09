@@ -2,11 +2,34 @@
   <view class="panel">
     <view class="title">课次管理</view>
     <view class="muted">{{campusName}} · {{courseName}}</view>
+    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
   </view>
+
+  <view class="panel" wx:if="{{isRealMode}}">
+    <view class="item-title">快捷新建课次</view>
+    <input class="input" placeholder="课次标题" value="{{titleInput}}" bindinput="onTitleInput" />
+    <input class="input" placeholder="教室" value="{{classroomInput}}" bindinput="onClassroomInput" />
+    <picker range="{{courseNames}}" value="{{courseIndex}}" bindchange="onCourseChange">
+      <view class="input">课程：{{courseNames[courseIndex] || '暂无课程'}}</view>
+    </picker>
+    <picker range="{{teacherNames}}" value="{{teacherIndex}}" bindchange="onTeacherChange">
+      <view class="input">老师：{{teacherNames[teacherIndex] || '暂无老师'}}</view>
+    </picker>
+    <picker range="{{studentNames}}" value="{{studentIndex}}" bindchange="onStudentChange">
+      <view class="input">学员：{{studentNames[studentIndex] || '暂无学员'}}</view>
+    </picker>
+  </view>
+
+  <view class="panel" wx:if="{{isRealMode}}">
+    <view class="item-title">消课规则</view>
+    <view class="muted">{{ruleText}}</view>
+    <view class="button secondary" bindtap="saveDefaultRule">保存默认规则</view>
+  </view>
+
   <view class="button" bindtap="newLesson">新建一节可打卡课次</view>
   <view wx:for="{{lessons}}" wx:key="id" class="list-item">
     <view class="row">
-      <view class="item-title">课次 #{{item.lesson_id}}</view>
+      <view class="item-title">{{item.title || '课次'}} #{{item.lesson_id}}</view>
       <view class="tag {{item.tagClass}}">{{item.attendanceText}}</view>
     </view>
     <view class="item-meta">学员：{{studentName}}</view>

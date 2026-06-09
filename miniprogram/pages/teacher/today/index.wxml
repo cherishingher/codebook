@@ -2,11 +2,22 @@
   <view class="panel">
     <view class="title">今日课次</view>
     <view class="muted">{{teacherName}} · {{campusName}}</view>
+    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
+  </view>
+  <view class="panel" wx:if="{{isRealMode}}">
+    <view class="item-title">快捷新建课次</view>
+    <input class="input" placeholder="课次标题" value="{{titleInput}}" bindinput="onTitleInput" />
+    <picker range="{{courseNames}}" value="{{courseIndex}}" bindchange="onCourseChange">
+      <view class="input">课程：{{courseNames[courseIndex] || '暂无课程'}}</view>
+    </picker>
+    <picker range="{{studentNames}}" value="{{studentIndex}}" bindchange="onStudentChange">
+      <view class="input">学员：{{studentNames[studentIndex] || '暂无学员'}}</view>
+    </picker>
   </view>
   <view class="button" bindtap="createLesson">新建一节可打卡课次</view>
   <view wx:for="{{lessons}}" wx:key="id" class="list-item" bindtap="goDetail" data-lesson-id="{{item.lesson_id}}">
     <view class="row">
-      <view class="item-title">{{courseName}} #{{item.lesson_id}}</view>
+      <view class="item-title">{{item.title || courseName}} #{{item.lesson_id}}</view>
       <view class="tag {{item.tagClass}}">{{item.attendanceText}}</view>
     </view>
     <view class="item-meta">学员：{{studentName}}</view>

@@ -2,6 +2,7 @@
   <view class="panel">
     <view class="title">考勤确认</view>
     <view class="muted">{{courseName}} · 学员 {{studentName}}</view>
+    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
     <view class="row">
       <text>课次ID</text>
       <text>{{lessonId}}</text>
@@ -14,6 +15,14 @@
       <text>当前消课</text>
       <text>{{deductionText}}</text>
     </view>
+  </view>
+  <view class="section-title">学员列表</view>
+  <view wx:for="{{students}}" wx:key="student_id" class="list-item" bindtap="selectStudent" data-student-id="{{item.student_id}}">
+    <view class="row">
+      <view class="item-title">{{item.studentName}}</view>
+      <view class="tag {{item.student_id === studentId ? 'ok' : item.tagClass}}">{{item.attendanceText}}</view>
+    </view>
+    <view class="item-meta">消课：{{item.deductionText}}</view>
   </view>
   <view class="section-title">确认操作</view>
   <view class="button" bindtap="confirmPresent">确认到课并消课</view>

@@ -2,6 +2,7 @@
   <view class="panel">
     <view class="title">{{studentName || '学员端'}}</view>
     <view class="muted">{{campusName}} · {{courseName}}</view>
+    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
   </view>
   <view class="metric-grid">
     <view class="metric">
@@ -15,7 +16,7 @@
   </view>
   <view class="section-title">最近课次</view>
   <view wx:for="{{lessons}}" wx:key="id" class="list-item">
-    <view class="item-title">课次 #{{item.lesson_id}}</view>
+    <view class="item-title">{{item.title || '课次'}} #{{item.lesson_id}}</view>
     <view class="item-meta">考勤：{{item.attendanceText}} · 消课：{{item.deductionText}}</view>
     <view class="item-meta">已消课时：{{item.deducted_hours}}</view>
   </view>
