@@ -1,7 +1,16 @@
 <view class="page">
   <view class="panel">
     <view class="title">课次管理</view>
-    <view class="muted">校区可以查看和管理所有课次。</view>
+    <view class="muted">{{campusName}} · {{courseName}}</view>
   </view>
+  <view class="button" bindtap="newLesson">新建一节可打卡课次</view>
+  <view wx:for="{{lessons}}" wx:key="id" class="list-item">
+    <view class="row">
+      <view class="item-title">课次 #{{item.lesson_id}}</view>
+      <view class="tag {{item.tagClass}}">{{item.attendanceText}}</view>
+    </view>
+    <view class="item-meta">学员：{{studentName}}</view>
+    <view class="item-meta">消课：{{item.deductionText}} · {{item.deducted_hours}} 课时</view>
+  </view>
+  <view class="button warning" bindtap="runAbsence">运行缺勤任务</view>
 </view>
-

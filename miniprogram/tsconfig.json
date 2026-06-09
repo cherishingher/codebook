@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2020"],
+    "allowJs": false,
+    "types": ["miniprogram-api-typings"]
+  },
+  "include": ["**/*.ts"]
+}

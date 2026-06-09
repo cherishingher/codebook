@@ -1,7 +1,17 @@
 <view class="page">
   <view class="panel">
     <view class="title">今日课次</view>
-    <view class="muted">教师查看自己的课程并确认考勤。</view>
+    <view class="muted">{{teacherName}} · {{campusName}}</view>
   </view>
+  <view class="button" bindtap="createLesson">新建一节可打卡课次</view>
+  <view wx:for="{{lessons}}" wx:key="id" class="list-item" bindtap="goDetail" data-lesson-id="{{item.lesson_id}}">
+    <view class="row">
+      <view class="item-title">{{courseName}} #{{item.lesson_id}}</view>
+      <view class="tag {{item.tagClass}}">{{item.attendanceText}}</view>
+    </view>
+    <view class="item-meta">学员：{{studentName}}</view>
+    <view class="item-meta">消课：{{item.deductionText}} · {{item.deducted_hours}} 课时</view>
+  </view>
+  <view wx:if="{{lessons.length === 0}}" class="panel muted">暂无课次</view>
+  <view class="button ghost" bindtap="switchRole">切换身份</view>
 </view>
-

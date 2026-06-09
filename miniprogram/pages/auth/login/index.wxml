@@ -3,6 +3,11 @@
     <view class="title">Codebook</view>
     <view class="muted">本地化智能课时考勤系统</view>
   </view>
-  <view class="button" bindtap="login">微信登录</view>
+  <view class="panel">
+    <view class="item-title">后端 API 地址</view>
+    <input class="input" value="{{apiBaseUrl}}" bindinput="onApiInput" />
+    <view class="muted">开发工具本机演示默认使用 http://127.0.0.1:8000/api/v1，真实手机预览请改成 Mac 局域网 IP 或 HTTPS 域名。</view>
+  </view>
+  <view class="button" bindtap="connectDemo">连接并生成演示数据</view>
+  <view class="button secondary" bindtap="goRoleSwitch">直接进入身份选择</view>
 </view>
-

@@ -11,6 +11,7 @@ __pycache__/
 venv/
 *.egg-info/
 node_modules/
+miniprogram/project.private.config.json
 dist/
 build/
 coverage/

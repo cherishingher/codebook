@@ -1,9 +1,24 @@
 <view class="page">
   <view class="panel">
     <view class="title">校区看板</view>
-    <view class="muted">今日课次、应到、实到、消课和设备状态。</view>
+    <view class="muted">{{campusName}} · {{deviceName}}</view>
   </view>
+  <view class="metric-grid">
+    <view class="metric">
+      <view class="metric-label">剩余课时</view>
+      <view class="metric-value">{{balanceText}}</view>
+    </view>
+    <view class="metric">
+      <view class="metric-label">设备状态</view>
+      <view class="metric-value">{{deviceStatus}}</view>
+    </view>
+  </view>
+  <view class="section-title">演示操作</view>
+  <view class="button" bindtap="newLesson">新建一节可打卡课次</view>
+  <view class="button secondary" bindtap="punch">模拟 USB 摄像头打卡</view>
+  <view class="button warning" bindtap="runAbsence">运行缺勤任务</view>
+  <view class="section-title">管理入口</view>
   <view class="panel" bindtap="goStudents">学员管理</view>
   <view class="panel" bindtap="goLessons">课次管理</view>
+  <view class="button ghost" bindtap="switchRole">切换身份</view>
 </view>
-

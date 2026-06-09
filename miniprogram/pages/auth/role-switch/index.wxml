@@ -2,9 +2,13 @@
   <view class="panel">
     <view class="title">选择进入端</view>
     <view class="muted">学员、教师、校区管理员使用同一个小程序。</view>
+    <view class="row">
+      <text>当前校区</text>
+      <text>{{campusName || '未连接'}}</text>
+    </view>
   </view>
   <view class="button" bindtap="goLearner">学员端</view>
   <view class="button" bindtap="goTeacher">教师端</view>
   <view class="button" bindtap="goCampus">校区端</view>
+  <view class="button ghost" bindtap="goLogin">修改 API 地址</view>
 </view>
-

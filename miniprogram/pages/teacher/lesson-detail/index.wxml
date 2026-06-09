@@ -1,7 +1,24 @@
 <view class="page">
   <view class="panel">
     <view class="title">考勤确认</view>
-    <view class="muted">到课、迟到、缺勤、请假和消课确认。</view>
+    <view class="muted">{{courseName}} · 学员 {{studentName}}</view>
+    <view class="row">
+      <text>课次ID</text>
+      <text>{{lessonId}}</text>
+    </view>
+    <view class="row">
+      <text>当前考勤</text>
+      <text>{{attendanceText}}</text>
+    </view>
+    <view class="row">
+      <text>当前消课</text>
+      <text>{{deductionText}}</text>
+    </view>
   </view>
+  <view class="section-title">确认操作</view>
+  <view class="button" bindtap="confirmPresent">确认到课并消课</view>
+  <view class="button secondary" bindtap="confirmLate">确认迟到并消课</view>
+  <view class="button warning" bindtap="confirmAbsent">确认缺勤，待校区处理</view>
+  <view class="button ghost" bindtap="confirmLeave">确认请假，不消课</view>
+  <view class="button ghost" bindtap="back">返回</view>
 </view>
-

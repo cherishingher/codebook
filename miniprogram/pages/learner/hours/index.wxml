@@ -1,7 +1,16 @@
 <view class="page">
   <view class="panel">
     <view class="title">课时流水</view>
-    <view class="muted">所有加课、消课、修正和作废记录会展示在这里。</view>
+    <view class="muted">{{studentName}} · 当前剩余 {{balanceText}}</view>
   </view>
+  <view wx:for="{{ledgers}}" wx:key="id" class="list-item">
+    <view class="row">
+      <view class="item-title">{{item.typeText}}</view>
+      <view class="tag {{item.change_hours < 0 ? 'bad' : 'ok'}}">{{item.changeText}}</view>
+    </view>
+    <view class="item-meta">余额：{{item.balance_before}} -> {{item.balance_after}}</view>
+    <view class="item-meta">来源：{{item.source}}</view>
+    <view class="item-meta">原因：{{item.reason}}</view>
+  </view>
+  <view wx:if="{{ledgers.length === 0}}" class="panel muted">暂无课时流水</view>
 </view>
-

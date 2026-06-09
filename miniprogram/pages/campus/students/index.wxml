@@ -3,5 +3,22 @@
     <view class="title">学员管理</view>
     <view class="muted">学员、家长绑定、人脸档案和课时账户。</view>
   </view>
+  <view class="list-item">
+    <view class="row">
+      <view class="item-title">{{studentName}}</view>
+      <view class="tag ok">{{studentNo}}</view>
+    </view>
+    <view class="item-meta">课程：{{courseName}}</view>
+    <view class="item-meta">剩余课时：{{balanceText}}</view>
+    <view class="item-meta">校区：{{campusName}}</view>
+  </view>
+  <view class="section-title">最近课时流水</view>
+  <view wx:for="{{ledgers}}" wx:key="id" class="list-item">
+    <view class="row">
+      <view class="item-title">{{item.typeText}}</view>
+      <view class="tag {{item.change_hours < 0 ? 'bad' : 'ok'}}">{{item.changeText}}</view>
+    </view>
+    <view class="item-meta">{{item.reason}}</view>
+    <view class="item-meta">余额：{{item.balance_before}} -> {{item.balance_after}}</view>
+  </view>
 </view>
-
