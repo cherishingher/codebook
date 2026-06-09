@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">今日课次</view>
+    <view class="muted">教师查看自己的课程并确认考勤。</view>
+  </view>
+</view>
+

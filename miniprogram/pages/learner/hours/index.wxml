@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">课时流水</view>
+    <view class="muted">所有加课、消课、修正和作废记录会展示在这里。</view>
+  </view>
+</view>
+

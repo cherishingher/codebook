@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">今日课程</view>
+    <view class="muted">查看课表、消课状态和剩余课时。</view>
+  </view>
+  <view class="panel" bindtap="goSchedule">课表</view>
+  <view class="panel" bindtap="goHours">课时流水</view>
+</view>
+

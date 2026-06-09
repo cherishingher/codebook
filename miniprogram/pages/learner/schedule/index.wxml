@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">课表</view>
+    <view class="muted">这里展示学员的日历课次列表。</view>
+  </view>
+</view>
+

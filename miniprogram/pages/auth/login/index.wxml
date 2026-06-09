@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">Codebook</view>
+    <view class="muted">本地化智能课时考勤系统</view>
+  </view>
+  <view class="button" bindtap="login">微信登录</view>
+</view>
+

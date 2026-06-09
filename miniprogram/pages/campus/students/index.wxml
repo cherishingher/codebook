@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">学员管理</view>
+    <view class="muted">学员、家长绑定、人脸档案和课时账户。</view>
+  </view>
+</view>
+

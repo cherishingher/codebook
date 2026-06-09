@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">课次管理</view>
+    <view class="muted">校区可以查看和管理所有课次。</view>
+  </view>
+</view>
+

@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">校区看板</view>
+    <view class="muted">今日课次、应到、实到、消课和设备状态。</view>
+  </view>
+  <view class="panel" bindtap="goStudents">学员管理</view>
+  <view class="panel" bindtap="goLessons">课次管理</view>
+</view>
+

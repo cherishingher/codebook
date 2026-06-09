@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/auth/login/index",
+    "pages/auth/role-switch/index",
+    "pages/learner/home/index",
+    "pages/learner/schedule/index",
+    "pages/learner/hours/index",
+    "pages/teacher/today/index",
+    "pages/teacher/lesson-detail/index",
+    "pages/campus/dashboard/index",
+    "pages/campus/students/index",
+    "pages/campus/lessons/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Codebook",
+    "navigationBarBackgroundColor": "#0F172A",
+    "navigationBarTextStyle": "white"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
+
