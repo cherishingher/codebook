@@ -2,7 +2,7 @@
   <view class="panel">
     <view class="title">课时流水</view>
     <view class="muted">{{studentName}} · 当前剩余 {{balanceText}}</view>
-    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
+    <view class="tag ok">真实接口</view>
   </view>
   <view wx:for="{{ledgers}}" wx:key="id" class="list-item">
     <view class="row">

@@ -49,3 +49,15 @@ export function setApiBaseUrl(url: string) {
 export function getApiBaseUrl() {
   return getApp<IAppOption>().globalData.apiBaseUrl
 }
+
+export function setToken(token: string) {
+  const app = getApp<IAppOption>()
+  app.globalData.token = token
+  wx.setStorageSync('token', token)
+}
+
+export function clearToken() {
+  const app = getApp<IAppOption>()
+  app.globalData.token = ''
+  wx.removeStorageSync('token')
+}

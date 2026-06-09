@@ -4,6 +4,7 @@ import hashlib
 import hmac
 
 from jose import jwt
+from jose import JWTError
 
 from app.core.config import settings
 
@@ -23,8 +24,14 @@ def create_access_token(subject: str, claims: dict | None = None) -> str:
     return jwt.encode(payload, settings.jwt_secret, algorithm=ALGORITHM)
 
 
+def decode_access_token(token: str) -> dict:
+    try:
+        return jwt.decode(token, settings.jwt_secret, algorithms=[ALGORITHM])
+    except JWTError as exc:
+        raise ValueError("Invalid token") from exc
+
+
 def verify_device_signature(secret: str, timestamp: str, body: bytes, signature: str) -> bool:
     payload = timestamp.encode("utf-8") + b"." + body
     expected = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
     return compare_digest(expected, signature)
-

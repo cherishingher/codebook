@@ -2,59 +2,45 @@
   <view class="panel">
     <view class="title">学员管理</view>
     <view class="muted">{{campusName}} · 学员、课时账户和流水</view>
-    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
+    <view class="tag ok">真实接口</view>
   </view>
 
-  <view wx:if="{{isRealMode}}">
-    <view class="panel">
-      <view class="item-title">新增学员</view>
-      <input class="input" placeholder="姓名" value="{{studentName}}" bindinput="onNameInput" />
-      <input class="input" placeholder="学号" value="{{studentNo}}" bindinput="onNoInput" />
-      <input class="input" placeholder="手机号" value="{{studentPhone}}" bindinput="onPhoneInput" />
-      <view class="button" bindtap="createStudent">保存学员</view>
-    </view>
-
-    <view class="panel">
-      <view class="item-title">搜索学员</view>
-      <input class="input" placeholder="输入姓名关键词" value="{{keyword}}" bindinput="onKeywordInput" />
-      <view class="button secondary" bindtap="search">搜索/刷新</view>
-    </view>
-
-    <view class="section-title">学员列表</view>
-    <view wx:for="{{students}}" wx:key="id" class="list-item" bindtap="selectStudent" data-student-id="{{item.id}}">
-      <view class="row">
-        <view class="item-title">{{item.name}}</view>
-        <view class="tag {{item.id === selectedStudentId ? 'ok' : 'warn'}}">#{{item.id}}</view>
-      </view>
-      <view class="item-meta">学号：{{item.student_no || '-'}}</view>
-      <view class="item-meta">电话：{{item.phone || '-'}}</view>
-    </view>
-
-    <view class="panel">
-      <view class="item-title">给 {{selectedStudentName || '选中学员'}} 加课</view>
-      <picker range="{{courseNames}}" value="{{courseIndex}}" bindchange="onCourseChange">
-        <view class="input">课程：{{courseNames[courseIndex] || '暂无课程'}}</view>
-      </picker>
-      <input class="input" type="digit" placeholder="增加课时" value="{{addHours}}" bindinput="onHoursInput" />
-      <input class="input" placeholder="原因" value="{{addReason}}" bindinput="onReasonInput" />
-      <view class="button" bindtap="addHoursToSelected">开账户/加课时</view>
-    </view>
+  <view class="panel">
+    <view class="item-title">新增学员</view>
+    <input class="input" placeholder="姓名" value="{{studentName}}" bindinput="onNameInput" />
+    <input class="input" placeholder="学号" value="{{studentNo}}" bindinput="onNoInput" />
+    <input class="input" placeholder="手机号" value="{{studentPhone}}" bindinput="onPhoneInput" />
+    <view class="button" bindtap="createStudent">保存学员</view>
   </view>
 
-  <view wx:else>
-    <view class="list-item">
-      <view class="row">
-        <view class="item-title">{{studentName}}</view>
-        <view class="tag ok">{{studentNo}}</view>
-      </view>
-      <view class="item-meta">课程：{{courseName}}</view>
-      <view class="item-meta">剩余课时：{{balanceText}}</view>
-      <view class="item-meta">校区：{{campusName}}</view>
+  <view class="panel">
+    <view class="item-title">搜索学员</view>
+    <input class="input" placeholder="输入姓名关键词" value="{{keyword}}" bindinput="onKeywordInput" />
+    <view class="button secondary" bindtap="search">搜索/刷新</view>
+  </view>
+
+  <view class="section-title">学员列表</view>
+  <view wx:for="{{students}}" wx:key="id" class="list-item" bindtap="selectStudent" data-student-id="{{item.id}}">
+    <view class="row">
+      <view class="item-title">{{item.name}}</view>
+      <view class="tag {{item.id === selectedStudentId ? 'ok' : 'warn'}}">#{{item.id}}</view>
     </view>
+    <view class="item-meta">学号：{{item.student_no || '-'}}</view>
+    <view class="item-meta">电话：{{item.phone || '-'}}</view>
+  </view>
+
+  <view class="panel">
+    <view class="item-title">给 {{selectedStudentName || '选中学员'}} 加课</view>
+    <picker range="{{courseNames}}" value="{{courseIndex}}" bindchange="onCourseChange">
+      <view class="input">课程：{{courseNames[courseIndex] || '暂无课程'}}</view>
+    </picker>
+    <input class="input" type="digit" placeholder="增加课时" value="{{addHours}}" bindinput="onHoursInput" />
+    <input class="input" placeholder="原因" value="{{addReason}}" bindinput="onReasonInput" />
+    <view class="button" bindtap="addHoursToSelected">开账户/加课时</view>
   </view>
 
   <view class="section-title">课时账户</view>
-  <view wx:if="{{isRealMode && accounts.length === 0}}" class="panel muted">当前学员还没有课时账户</view>
+  <view wx:if="{{accounts.length === 0}}" class="panel muted">当前学员还没有课时账户</view>
   <view wx:for="{{accounts}}" wx:key="id" class="list-item">
     <view class="row">
       <view class="item-title">账户 #{{item.id}}</view>

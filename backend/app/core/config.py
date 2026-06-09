@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24 * 7
     device_signature_tolerance_seconds: int = 300
     storage_root: str = "/Volumes/AttendanceData/storage"
+    enable_local_login: bool = True
+    wechat_appid: str | None = None
+    wechat_secret: str | None = None
 
 
 @lru_cache
@@ -22,4 +25,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-

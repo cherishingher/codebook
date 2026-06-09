@@ -2,7 +2,7 @@
   <view class="panel">
     <view class="title">{{studentName || '学员端'}}</view>
     <view class="muted">{{campusName}} · {{courseName}}</view>
-    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
+    <view class="tag ok">真实接口</view>
   </view>
   <view class="metric-grid">
     <view class="metric">

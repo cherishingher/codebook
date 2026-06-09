@@ -1,9 +1,12 @@
 from datetime import datetime
 from decimal import Decimal
+import base64
 
 import httpx
+import numpy as np
 
 from agent.config import settings
+from agent.face.types import FaceProfile
 
 
 class ApiClient:
@@ -43,12 +46,17 @@ class ApiClient:
             response.raise_for_status()
             return response.json()
 
-    def fetch_face_profiles(self, updated_after: str | None = None) -> list[dict]:
+    def fetch_face_profiles(self, updated_after: str | None = None) -> list[FaceProfile]:
         params = {"device_code": settings.device_code}
         if updated_after:
             params["updated_after"] = updated_after
         with httpx.Client(timeout=20) as client:
             response = client.get(f"{self.base_url}/device/face-profiles", params=params)
             response.raise_for_status()
-            return response.json().get("items", [])
-
+            items = response.json().get("items", [])
+        profiles: list[FaceProfile] = []
+        for item in items:
+            raw = base64.b64decode(item["feature_data"])
+            feature = np.frombuffer(raw, dtype=np.float32)
+            profiles.append(FaceProfile(student_id=item["student_id"], feature=feature))
+        return profiles

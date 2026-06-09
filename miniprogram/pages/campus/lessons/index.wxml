@@ -2,10 +2,10 @@
   <view class="panel">
     <view class="title">课次管理</view>
     <view class="muted">{{campusName}} · {{courseName}}</view>
-    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
+    <view class="tag ok">真实接口</view>
   </view>
 
-  <view class="panel" wx:if="{{isRealMode}}">
+  <view class="panel">
     <view class="item-title">快捷新建课次</view>
     <input class="input" placeholder="课次标题" value="{{titleInput}}" bindinput="onTitleInput" />
     <input class="input" placeholder="教室" value="{{classroomInput}}" bindinput="onClassroomInput" />
@@ -20,7 +20,7 @@
     </picker>
   </view>
 
-  <view class="panel" wx:if="{{isRealMode}}">
+  <view class="panel">
     <view class="item-title">消课规则</view>
     <view class="muted">{{ruleText}}</view>
     <view class="button secondary" bindtap="saveDefaultRule">保存默认规则</view>

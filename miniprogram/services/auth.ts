@@ -5,6 +5,7 @@ export type RoleOption = {
   campus_id?: number
   campus_name?: string
   student_id?: number
+  teacher_id?: number
 }
 
 export async function loginWithCode(code: string) {
@@ -21,3 +22,16 @@ export async function switchRole(role: RoleOption) {
   })
 }
 
+export async function localLogin(params: {
+  openid: string
+  name?: string
+  role: string
+  campus_id?: number
+  student_id?: number
+  teacher_id?: number
+}) {
+  return request<{ token: string; roles: RoleOption[] }>('/auth/local-login', {
+    method: 'POST',
+    data: params as unknown as Record<string, unknown>
+  })
+}

@@ -7,7 +7,6 @@ import {
   getCampusHourLedgers,
   getCampusStudents
 } from '../../../services/campus'
-import { getDemoState } from '../../../services/demo'
 import { formatHours, ledgerText, signedHours } from '../../../utils/format'
 
 type ListResponse<T> = { items: T[] }
@@ -26,7 +25,7 @@ type LedgerItem = {
 
 Page({
   data: {
-    isRealMode: false,
+    isRealMode: true,
     campusId: 0,
     keyword: '',
     studentName: '',
@@ -53,49 +52,34 @@ Page({
 
   async load() {
     const role = getApp<IAppOption>().globalData.currentRole
-    if (role?.campusId) {
-      try {
-        const [studentsRes, coursesRes] = await Promise.all([
-          getCampusStudents(role.campusId, this.data.keyword) as Promise<ListResponse<StudentItem>>,
-          getCampusCourses(role.campusId) as Promise<ListResponse<CourseItem>>
-        ])
-        const selected = studentsRes.items.find((item) => item.id === this.data.selectedStudentId)
-          || studentsRes.items[0]
-        this.setData({
-          isRealMode: true,
-          campusId: role.campusId,
-          campusName: `校区 #${role.campusId}`,
-          students: studentsRes.items,
-          courses: coursesRes.items,
-          courseNames: coursesRes.items.map((item) => `${item.id} · ${item.name}`),
-          selectedStudentId: selected?.id || 0,
-          selectedStudentName: selected?.name || '',
-          studentName: '',
-          studentNo: '',
-          studentPhone: ''
-        })
-        if (selected) {
-          await this.loadStudentFinance(selected.id)
-        }
-        return
-      } catch (error) {
-        wx.showToast({ title: '真实学员读取失败，显示演示数据', icon: 'none' })
-      }
+    if (!role?.campusId) {
+      wx.showToast({ title: '请先登录校区身份', icon: 'none' })
+      return
     }
-    const state = await getDemoState()
+    const [studentsRes, coursesRes] = await Promise.all([
+      getCampusStudents(role.campusId, this.data.keyword) as Promise<ListResponse<StudentItem>>,
+      getCampusCourses(role.campusId) as Promise<ListResponse<CourseItem>>
+    ])
+    const selected = studentsRes.items.find((item) => item.id === this.data.selectedStudentId)
+      || studentsRes.items[0]
     this.setData({
-      isRealMode: false,
-      studentName: state.student.name,
-      studentNo: state.student.student_no,
-      courseName: state.course.name,
-      campusName: state.campus.name,
-      balanceText: formatHours(Number(state.account.balance_hours)),
-      ledgers: state.ledgers.map((item) => ({
-        ...item,
-        typeText: ledgerText(item.change_type),
-        changeText: signedHours(Number(item.change_hours))
-      }))
+      isRealMode: true,
+      campusId: role.campusId,
+      campusName: `校区 #${role.campusId}`,
+      students: studentsRes.items,
+      courses: coursesRes.items,
+      courseNames: coursesRes.items.map((item) => `${item.id} · ${item.name}`),
+      selectedStudentId: selected?.id || 0,
+      selectedStudentName: selected?.name || '',
+      studentName: '',
+      studentNo: '',
+      studentPhone: ''
     })
+    if (selected) {
+      await this.loadStudentFinance(selected.id)
+    } else {
+      this.setData({ accounts: [], ledgers: [], balanceText: '暂无学员' })
+    }
   },
 
   async loadStudentFinance(studentId: number) {

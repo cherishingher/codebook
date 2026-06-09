@@ -1,4 +1,5 @@
 import os
+import base64
 from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
@@ -8,6 +9,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./codebook_test.sqlite3"
 from app.core.database import Base, engine  # noqa: E402
 from app.core.init_db import init_db  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models.face import FaceProfile  # noqa: E402
 
 
 def client() -> TestClient:
@@ -251,3 +253,61 @@ def test_management_endpoints_return_lesson_details_and_validate_inputs() -> Non
         },
     )
     assert invalid.status_code == 400
+
+
+def test_local_login_issues_token_and_switches_bound_role() -> None:
+    api = client()
+    data = seed_base(api, "AUTH")
+    login = api.post(
+        "/api/v1/auth/local-login",
+        json={
+            "openid": "local:campus-admin",
+            "name": "校区管理员",
+            "role": "campus_admin",
+            "campus_id": data["campus"]["id"],
+        },
+    ).json()
+    assert login["token"]
+    assert any(item["role"] == "campus_admin" for item in login["roles"])
+
+    switched = api.post(
+        "/api/v1/auth/switch-role",
+        headers={"Authorization": f"Bearer {login['token']}"},
+        json={"role": "campus_admin", "campus_id": data["campus"]["id"]},
+    )
+    assert switched.status_code == 200
+    assert switched.json()["token"]
+
+    forbidden = api.post(
+        "/api/v1/auth/switch-role",
+        headers={"Authorization": f"Bearer {login['token']}"},
+        json={"role": "campus_admin", "campus_id": data["campus"]["id"] + 100},
+    )
+    assert forbidden.status_code == 403
+
+
+def test_device_face_profile_sync_returns_persisted_features() -> None:
+    api = client()
+    data = seed_base(api, "FACE")
+    feature = b"\x00\x00\x80?\x00\x00\x00?"
+    from app.core.database import SessionLocal
+
+    with SessionLocal() as session:
+        session.add(
+            FaceProfile(
+                campus_id=data["campus"]["id"],
+                student_id=data["student"]["id"],
+                feature_data=feature,
+                feature_version="simple-32x32",
+                consent_status="granted",
+                status="active",
+            )
+        )
+        session.commit()
+
+    response = api.get(f"/api/v1/device/face-profiles?device_code={data['device_code']}")
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert len(items) == 1
+    assert items[0]["student_id"] == data["student"]["id"]
+    assert base64.b64decode(items[0]["feature_data"]) == feature

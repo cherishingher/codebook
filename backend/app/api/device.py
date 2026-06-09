@@ -1,4 +1,5 @@
 from datetime import datetime
+import base64
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -6,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.device import Device
+from app.models.face import FaceProfile
 from app.schemas.device import DeviceHeartbeatRequest, PunchEventRequest
 from app.services.attendance_service import AttendanceService
 
@@ -44,5 +46,29 @@ def punch_event(payload: PunchEventRequest, db: Session = Depends(get_db)) -> di
 
 
 @router.get("/face-profiles")
-def face_profiles(device_code: str, updated_after: str | None = None) -> dict:
-    return {"device_code": device_code, "updated_after": updated_after, "items": []}
+def face_profiles(device_code: str, updated_after: str | None = None, db: Session = Depends(get_db)) -> dict:
+    device = db.scalar(select(Device).where(Device.device_code == device_code))
+    if device is None or device.status != "active":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found or inactive")
+    query = select(FaceProfile).where(
+        FaceProfile.campus_id == device.campus_id,
+        FaceProfile.status == "active",
+        FaceProfile.consent_status == "granted",
+    )
+    if updated_after:
+        query = query.where(FaceProfile.updated_at >= datetime.fromisoformat(updated_after))
+    items = db.scalars(query.order_by(FaceProfile.updated_at.asc())).all()
+    return {
+        "device_code": device_code,
+        "updated_after": updated_after,
+        "items": [
+            {
+                "id": item.id,
+                "student_id": item.student_id,
+                "feature_version": item.feature_version,
+                "feature_data": base64.b64encode(item.feature_data).decode("ascii"),
+                "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+            }
+            for item in items
+        ],
+    }

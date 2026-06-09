@@ -2,7 +2,7 @@
   <view class="panel">
     <view class="title">考勤确认</view>
     <view class="muted">{{courseName}} · 学员 {{studentName}}</view>
-    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
+    <view class="tag ok">真实接口</view>
     <view class="row">
       <text>课次ID</text>
       <text>{{lessonId}}</text>

@@ -2,9 +2,9 @@
   <view class="panel">
     <view class="title">今日课次</view>
     <view class="muted">{{teacherName}} · {{campusName}}</view>
-    <view class="tag {{isRealMode ? 'ok' : 'warn'}}">{{isRealMode ? '真实接口' : '演示模式'}}</view>
+    <view class="tag ok">真实接口</view>
   </view>
-  <view class="panel" wx:if="{{isRealMode}}">
+  <view class="panel">
     <view class="item-title">快捷新建课次</view>
     <input class="input" placeholder="课次标题" value="{{titleInput}}" bindinput="onTitleInput" />
     <picker range="{{courseNames}}" value="{{courseIndex}}" bindchange="onCourseChange">

@@ -1,5 +1,5 @@
-import { getApiBaseUrl, setApiBaseUrl } from '../../../services/api'
-import { seedDemo } from '../../../services/demo'
+import { localLogin } from '../../../services/auth'
+import { getApiBaseUrl, setApiBaseUrl, setToken } from '../../../services/api'
 
 Page({
   data: {
@@ -35,22 +35,6 @@ Page({
     this.setData({ teacherId: event.detail.value })
   },
 
-  async connectDemo() {
-    const app = getApp<IAppOption>()
-    setApiBaseUrl(this.data.apiBaseUrl)
-    const state = await seedDemo()
-    app.globalData.demoState = state
-    app.globalData.currentRole = {
-      role: 'learner',
-      campusId: state.campus.id,
-      studentId: state.student.id,
-      teacherId: state.teacher.id
-    }
-    wx.setStorageSync('currentRole', app.globalData.currentRole)
-    wx.showToast({ title: '连接成功', icon: 'success' })
-    wx.navigateTo({ url: '/pages/auth/role-switch/index' })
-  },
-
   enterLearner() {
     this.enterRole('learner')
   },
@@ -63,7 +47,7 @@ Page({
     this.enterRole('campus_admin')
   },
 
-  enterRole(role: string) {
+  async enterRole(role: string) {
     setApiBaseUrl(this.data.apiBaseUrl)
     const currentRole = {
       role,
@@ -83,6 +67,15 @@ Page({
       wx.showToast({ title: '请填写校区ID', icon: 'none' })
       return
     }
+    const login = await localLogin({
+      openid: `local:${role}:${currentRole.campusId || 0}:${currentRole.studentId || 0}:${currentRole.teacherId || 0}`,
+      name: '本地调试用户',
+      role,
+      campus_id: currentRole.campusId,
+      student_id: currentRole.studentId,
+      teacher_id: currentRole.teacherId
+    })
+    setToken(login.token)
     const app = getApp<IAppOption>()
     app.globalData.currentRole = currentRole
     wx.setStorageSync('currentRole', currentRole)

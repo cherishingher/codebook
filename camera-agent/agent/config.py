@@ -16,6 +16,7 @@ class AgentSettings(BaseSettings):
     dedup_seconds: int = 30
     save_snapshots: bool = True
     storage_root: str = "/Volumes/AttendanceData/storage"
+    queue_db_path: str = "/Volumes/AttendanceData/storage/camera-agent/offline_queue.sqlite3"
 
 
 @lru_cache
@@ -24,4 +25,3 @@ def get_settings() -> AgentSettings:
 
 
 settings = get_settings()
-
