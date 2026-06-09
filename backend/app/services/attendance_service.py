@@ -213,19 +213,21 @@ class AttendanceService:
             lesson_student.deduction_status = "deducted"
             lesson_student.deducted_hours = lesson.default_hour_cost
         elif deduction_action == "not_deduct":
-            try:
-                self.hours.restore_deduction(
-                    attendance_record_id=attendance.id,
-                    operator_user_id=operator_user_id,
-                    reason=reason,
-                )
-            except HTTPException as exc:
-                if exc.status_code != status.HTTP_404_NOT_FOUND:
-                    raise
+            self._restore_deduction_if_exists(
+                attendance_record_id=attendance.id,
+                operator_user_id=operator_user_id,
+                reason=reason,
+            )
             lesson_student.deduction_status = "not_deducted"
             lesson_student.deducted_hours = Decimal("0.00")
         elif deduction_action == "manual_required":
+            self._restore_deduction_if_exists(
+                attendance_record_id=attendance.id,
+                operator_user_id=operator_user_id,
+                reason=reason,
+            )
             lesson_student.deduction_status = "manual_required"
+            lesson_student.deducted_hours = Decimal("0.00")
         else:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid deduction action")
 
@@ -275,3 +277,20 @@ class AttendanceService:
                 LessonStudent.student_id == student_id,
             )
         )
+
+    def _restore_deduction_if_exists(
+        self,
+        *,
+        attendance_record_id: int,
+        operator_user_id: int | None,
+        reason: str,
+    ) -> None:
+        try:
+            self.hours.restore_deduction(
+                attendance_record_id=attendance_record_id,
+                operator_user_id=operator_user_id,
+                reason=reason,
+            )
+        except HTTPException as exc:
+            if exc.status_code != status.HTTP_404_NOT_FOUND:
+                raise

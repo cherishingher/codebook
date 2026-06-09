@@ -1,10 +1,12 @@
-from decimal import Decimal
 import hashlib
+from datetime import datetime, time
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.api.lesson_views import lesson_detail, lesson_summary
 from app.api.utils import page_response, public_model
 from app.core.database import get_db
 from app.models.attendance import AttendanceRecord
@@ -19,13 +21,25 @@ from app.schemas.campus import CampusCreate, CourseCreate, DeviceCreate, Student
 from app.schemas.hour import DeductionRuleUpsert, HourAccountCreate, HourLedgerCreate
 from app.schemas.lesson import LessonCreateRequest
 from app.services.hour_service import HourService
+from app.services.lesson_service import LessonService
 
 router = APIRouter()
 
 
 @router.get("/dashboard")
 def campus_dashboard(campus_id: int, db: Session = Depends(get_db)) -> dict:
-    lessons_today = db.scalar(select(func.count(Lesson.id)).where(Lesson.campus_id == campus_id)) or 0
+    today_start = datetime.combine(datetime.now().date(), time.min)
+    tomorrow_start = datetime.combine(datetime.now().date(), time.max)
+    lessons_today = (
+        db.scalar(
+            select(func.count(Lesson.id)).where(
+                Lesson.campus_id == campus_id,
+                Lesson.start_time >= today_start,
+                Lesson.start_time <= tomorrow_start,
+            )
+        )
+        or 0
+    )
     expected = (
         db.scalar(
             select(func.count(LessonStudent.id))
@@ -197,58 +211,29 @@ def courses(campus_id: int | None = None, db: Session = Depends(get_db)) -> dict
 
 @router.post("/lessons")
 def create_lesson(payload: LessonCreateRequest, db: Session = Depends(get_db)) -> dict:
-    lesson_data = payload.model_dump(exclude={"student_ids"})
-    lesson = Lesson(**lesson_data)
-    db.add(lesson)
-    db.flush()
-    for student_id in payload.student_ids:
-        db.add(
-            LessonStudent(
-                lesson_id=lesson.id,
-                student_id=student_id,
-                planned_hour_cost=payload.default_hour_cost,
-            )
-        )
+    lesson = LessonService(db).create_lesson(
+        **payload.model_dump(exclude={"student_ids"}),
+        student_ids=payload.student_ids,
+    )
     db.commit()
     db.refresh(lesson)
-    return public_model(
-        lesson,
-        [
-            "id",
-            "campus_id",
-            "course_id",
-            "teacher_id",
-            "title",
-            "classroom_name",
-            "start_time",
-            "end_time",
-            "status",
-        ],
-    )
+    return lesson_summary(lesson)
+
+
+@router.get("/lessons/{lesson_id}")
+def lesson(lesson_id: int, campus_id: int | None = None, db: Session = Depends(get_db)) -> dict:
+    item = db.get(Lesson, lesson_id)
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
+    if campus_id is not None and item.campus_id != campus_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Lesson is not in this campus")
+    return lesson_detail(db, item)
 
 
 @router.get("/lessons")
 def lessons(campus_id: int, db: Session = Depends(get_db)) -> dict:
     items = db.scalars(select(Lesson).where(Lesson.campus_id == campus_id).order_by(Lesson.start_time.desc())).all()
-    return {
-        "items": [
-            public_model(
-                item,
-                [
-                    "id",
-                    "campus_id",
-                    "course_id",
-                    "teacher_id",
-                    "title",
-                    "classroom_name",
-                    "start_time",
-                    "end_time",
-                    "status",
-                ],
-            )
-            for item in items
-        ]
-    }
+    return {"items": [lesson_summary(item) for item in items]}
 
 
 @router.post("/hour-accounts")
@@ -264,6 +249,27 @@ def create_hour_account(payload: HourAccountCreate, db: Session = Depends(get_db
     db.commit()
     db.refresh(account)
     return public_model(account, ["id", "campus_id", "student_id", "course_id", "balance_hours", "status"])
+
+
+@router.get("/hour-accounts")
+def hour_accounts(
+    campus_id: int,
+    student_id: int | None = None,
+    course_id: int | None = None,
+    db: Session = Depends(get_db),
+) -> dict:
+    query = select(HourAccount).where(HourAccount.campus_id == campus_id)
+    if student_id is not None:
+        query = query.where(HourAccount.student_id == student_id)
+    if course_id is not None:
+        query = query.where(HourAccount.course_id == course_id)
+    items = db.scalars(query.order_by(HourAccount.id.desc())).all()
+    return {
+        "items": [
+            public_model(item, ["id", "campus_id", "student_id", "course_id", "balance_hours", "status"])
+            for item in items
+        ]
+    }
 
 
 @router.post("/hour-accounts/{account_id}/ledger")
@@ -307,6 +313,32 @@ def hour_ledgers(campus_id: int, student_id: int | None = None, db: Session = De
                     "source",
                     "reason",
                     "created_at",
+                ],
+            )
+            for item in items
+        ]
+    }
+
+
+@router.get("/deduction-rules")
+def deduction_rules(campus_id: int, db: Session = Depends(get_db)) -> dict:
+    items = db.scalars(
+        select(DeductionRule).where(DeductionRule.campus_id == campus_id).order_by(DeductionRule.id.asc())
+    ).all()
+    return {
+        "items": [
+            public_model(
+                item,
+                [
+                    "id",
+                    "campus_id",
+                    "scope_type",
+                    "scope_id",
+                    "present_action",
+                    "late_action",
+                    "absent_action",
+                    "leave_action",
+                    "exception_action",
                 ],
             )
             for item in items

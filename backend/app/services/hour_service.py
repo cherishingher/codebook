@@ -91,22 +91,18 @@ class HourService:
 
         normalized_change = self._normalize_change(change_type, change_hours)
         if attendance_record_id and change_type == "deduct":
-            existing = self.db.scalar(
-                select(HourLedger).where(
-                    HourLedger.attendance_record_id == attendance_record_id,
-                    HourLedger.change_type == "deduct",
-                )
-            )
+            existing = self._active_deduction(attendance_record_id)
             if existing:
-                return LedgerResult(
-                    ledger_id=existing.id,
-                    balance_before=existing.balance_before,
-                    balance_after=existing.balance_after,
-                )
+                return LedgerResult(existing.id, existing.balance_before, existing.balance_after)
 
         balance_before = Decimal(account.balance_hours)
         balance_after = balance_before + normalized_change
         account.balance_hours = balance_after
+        ledger_source = self._unique_source(
+            attendance_record_id=attendance_record_id,
+            change_type=change_type,
+            source=source,
+        )
 
         ledger = HourLedger(
             campus_id=account.campus_id,
@@ -120,7 +116,7 @@ class HourService:
             balance_before=balance_before,
             balance_after=balance_after,
             operator_user_id=operator_user_id,
-            source=source,
+            source=ledger_source,
             reason=reason,
             related_ledger_id=related_ledger_id,
         )
@@ -227,6 +223,13 @@ class HourService:
             self.db.scalar(
                 select(DeductionRule).where(
                     DeductionRule.campus_id == lesson.campus_id,
+                    DeductionRule.scope_type == "teacher",
+                    DeductionRule.scope_id == lesson.teacher_id,
+                )
+            ),
+            self.db.scalar(
+                select(DeductionRule).where(
+                    DeductionRule.campus_id == lesson.campus_id,
                     DeductionRule.scope_type == "campus",
                     DeductionRule.scope_id.is_(None),
                 )
@@ -254,3 +257,39 @@ class HourService:
         if change_type == "void":
             return -amount
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported ledger type")
+
+    def _active_deduction(self, attendance_record_id: int) -> HourLedger | None:
+        deductions = self.db.scalars(
+            select(HourLedger)
+            .where(
+                HourLedger.attendance_record_id == attendance_record_id,
+                HourLedger.change_type == "deduct",
+            )
+            .order_by(HourLedger.id.desc())
+        ).all()
+        for deduction in deductions:
+            restored = self.db.scalar(
+                select(HourLedger).where(
+                    HourLedger.related_ledger_id == deduction.id,
+                    HourLedger.change_type == "restore",
+                )
+            )
+            if restored is None:
+                return deduction
+        return None
+
+    def _unique_source(self, *, attendance_record_id: int | None, change_type: str, source: str) -> str:
+        if attendance_record_id is None:
+            return source
+        candidate = source
+        suffix = 2
+        while self.db.scalar(
+            select(HourLedger.id).where(
+                HourLedger.attendance_record_id == attendance_record_id,
+                HourLedger.change_type == change_type,
+                HourLedger.source == candidate,
+            )
+        ):
+            candidate = f"{source}_{suffix}"
+            suffix += 1
+        return candidate

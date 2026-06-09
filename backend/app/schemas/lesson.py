@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -21,8 +22,9 @@ class LessonCreateRequest(BaseModel):
 
 class AttendanceConfirmRequest(BaseModel):
     student_id: int
-    attendance_status: str
-    deduction_action: str
+    attendance_status: Literal["present", "late", "absent", "leave", "exception"]
+    deduction_action: Literal["deduct", "not_deduct", "manual_required"]
     deducted_hours: Decimal = Field(default=Decimal("0.00"), ge=0)
     reason: str
     operator_user_id: int | None = None
+    teacher_id: int | None = None
