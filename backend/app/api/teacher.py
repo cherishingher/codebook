@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.api.lesson_views import lesson_detail, lesson_summary
 from app.api.utils import public_model
 from app.core.database import get_db
+from app.core.permissions import Actor, get_current_actor, require_teacher_scope
 from app.models.lesson import Lesson
 from app.schemas.lesson import AttendanceConfirmRequest, LessonCreateRequest
 from app.services.attendance_service import AttendanceService
@@ -14,7 +15,12 @@ router = APIRouter()
 
 
 @router.get("/dashboard")
-def teacher_dashboard(teacher_id: int, db: Session = Depends(get_db)) -> dict:
+def teacher_dashboard(
+    teacher_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_teacher_scope(actor, teacher_id)
     lessons = db.scalars(
         select(Lesson).where(Lesson.teacher_id == teacher_id).order_by(Lesson.start_time.asc()).limit(20)
     ).all()
@@ -31,7 +37,12 @@ def teacher_dashboard(teacher_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/lessons")
-def teacher_lessons(teacher_id: int, db: Session = Depends(get_db)) -> dict:
+def teacher_lessons(
+    teacher_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_teacher_scope(actor, teacher_id)
     lessons = db.scalars(
         select(Lesson).where(Lesson.teacher_id == teacher_id).order_by(Lesson.start_time.desc())
     ).all()
@@ -39,7 +50,13 @@ def teacher_lessons(teacher_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/lessons/{lesson_id}")
-def teacher_lesson_detail(lesson_id: int, teacher_id: int, db: Session = Depends(get_db)) -> dict:
+def teacher_lesson_detail(
+    lesson_id: int,
+    teacher_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_teacher_scope(actor, teacher_id)
     lesson = db.get(Lesson, lesson_id)
     if lesson is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
@@ -49,7 +66,12 @@ def teacher_lesson_detail(lesson_id: int, teacher_id: int, db: Session = Depends
 
 
 @router.post("/lessons")
-def create_lesson(payload: LessonCreateRequest, db: Session = Depends(get_db)) -> dict:
+def create_lesson(
+    payload: LessonCreateRequest,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_teacher_scope(actor, payload.teacher_id)
     lesson = LessonService(db).create_lesson(
         **payload.model_dump(exclude={"student_ids"}),
         student_ids=payload.student_ids,
@@ -63,11 +85,13 @@ def create_lesson(payload: LessonCreateRequest, db: Session = Depends(get_db)) -
 def confirm_attendance(
     lesson_id: int,
     payload: AttendanceConfirmRequest,
+    actor: Actor = Depends(get_current_actor),
     db: Session = Depends(get_db),
 ) -> dict:
     lesson = db.get(Lesson, lesson_id)
     if lesson is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
+    require_teacher_scope(actor, lesson.teacher_id)
     if payload.teacher_id is not None and lesson.teacher_id != payload.teacher_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Lesson is not owned by this teacher")
     AttendanceService(db).confirm_attendance(
@@ -75,7 +99,7 @@ def confirm_attendance(
         student_id=payload.student_id,
         attendance_status=payload.attendance_status,
         deduction_action=payload.deduction_action,
-        operator_user_id=payload.operator_user_id,
+        operator_user_id=actor.user_id or payload.operator_user_id,
         reason=payload.reason,
     )
     db.commit()

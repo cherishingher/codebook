@@ -31,7 +31,13 @@ def decode_access_token(token: str) -> dict:
         raise ValueError("Invalid token") from exc
 
 
-def verify_device_signature(secret: str, timestamp: str, body: bytes, signature: str) -> bool:
-    payload = timestamp.encode("utf-8") + b"." + body
-    expected = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+def verify_device_signature(
+    secret_hash: str,
+    timestamp: str,
+    nonce: str,
+    body: bytes,
+    signature: str,
+) -> bool:
+    payload = f"{timestamp}.{nonce}.".encode("utf-8") + body
+    expected = hmac.new(secret_hash.encode("utf-8"), payload, hashlib.sha256).hexdigest()
     return compare_digest(expected, signature)

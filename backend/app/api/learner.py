@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.utils import public_model
 from app.core.database import get_db
+from app.core.permissions import Actor, get_current_actor, require_student_scope
 from app.models.attendance import AttendanceRecord
 from app.models.course import Course
 from app.models.hour import HourAccount, HourLedger
@@ -16,7 +17,12 @@ router = APIRouter()
 
 
 @router.get("/dashboard")
-def learner_dashboard(student_id: int, db: Session = Depends(get_db)) -> dict:
+def learner_dashboard(
+    student_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_student_scope(actor, student_id)
     student = db.get(Student, student_id)
     if student is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
@@ -48,8 +54,10 @@ def learner_lessons(
     student_id: int,
     start_date: str | None = None,
     end_date: str | None = None,
+    actor: Actor = Depends(get_current_actor),
     db: Session = Depends(get_db),
 ) -> dict:
+    require_student_scope(actor, student_id)
     student = db.get(Student, student_id)
     if student is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
@@ -78,7 +86,13 @@ def learner_lessons(
 
 
 @router.get("/lessons/{lesson_id}")
-def learner_lesson_detail(lesson_id: int, student_id: int, db: Session = Depends(get_db)) -> dict:
+def learner_lesson_detail(
+    lesson_id: int,
+    student_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_student_scope(actor, student_id)
     lesson = db.get(Lesson, lesson_id)
     if lesson is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
@@ -134,7 +148,12 @@ def _parse_date_boundary(value: str, *, start: bool) -> datetime:
 
 
 @router.get("/hour-accounts")
-def learner_hour_accounts(student_id: int, db: Session = Depends(get_db)) -> dict:
+def learner_hour_accounts(
+    student_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_student_scope(actor, student_id)
     accounts = db.scalars(select(HourAccount).where(HourAccount.student_id == student_id)).all()
     items = []
     for account in accounts:
@@ -150,8 +169,10 @@ def learner_hour_ledgers(
     student_id: int,
     page: int = 1,
     page_size: int = 20,
+    actor: Actor = Depends(get_current_actor),
     db: Session = Depends(get_db),
 ) -> dict:
+    require_student_scope(actor, student_id)
     items = db.scalars(
         select(HourLedger)
         .where(HourLedger.student_id == student_id)

@@ -186,6 +186,8 @@ def _ensure_role(
 def _role_options(db: Session, user: User) -> list[dict]:
     options: list[dict] = []
     for role in db.scalars(select(UserRole).where(UserRole.user_id == user.id, UserRole.status == "active")).all():
+        if role.role in {"guardian", "teacher"}:
+            continue
         options.append({"role": role.role, "campus_id": role.campus_id})
     for relation in db.scalars(
         select(GuardianStudentRelation).where(
@@ -203,7 +205,7 @@ def _role_matches(option: dict, requested: dict) -> bool:
     if option.get("role") != requested.get("role"):
         return False
     for key in ["campus_id", "student_id", "teacher_id"]:
-        if requested.get(key) is not None and option.get(key) != requested.get(key):
+        if option.get(key) != requested.get(key):
             return False
     return True
 

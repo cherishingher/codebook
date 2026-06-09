@@ -9,6 +9,13 @@ from sqlalchemy.orm import Session
 from app.api.lesson_views import lesson_detail, lesson_summary
 from app.api.utils import page_response, public_model
 from app.core.database import get_db
+from app.core.permissions import (
+    Actor,
+    get_current_actor,
+    require_campus_member_scope,
+    require_campus_scope,
+    require_role,
+)
 from app.models.attendance import AttendanceRecord
 from app.models.campus import Campus
 from app.models.course import Course
@@ -27,7 +34,12 @@ router = APIRouter()
 
 
 @router.get("/dashboard")
-def campus_dashboard(campus_id: int, db: Session = Depends(get_db)) -> dict:
+def campus_dashboard(
+    campus_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, campus_id)
     today_start = datetime.combine(datetime.now().date(), time.min)
     tomorrow_start = datetime.combine(datetime.now().date(), time.max)
     lessons_today = (
@@ -103,7 +115,12 @@ def campus_dashboard(campus_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 @router.post("/campuses")
-def create_campus(payload: CampusCreate, db: Session = Depends(get_db)) -> dict:
+def create_campus(
+    payload: CampusCreate,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_role(actor, {"super_admin"})
     campus = Campus(**payload.model_dump())
     db.add(campus)
     db.commit()
@@ -112,7 +129,8 @@ def create_campus(payload: CampusCreate, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/campuses")
-def campuses(db: Session = Depends(get_db)) -> dict:
+def campuses(actor: Actor = Depends(get_current_actor), db: Session = Depends(get_db)) -> dict:
+    require_role(actor, {"super_admin"})
     items = db.scalars(select(Campus).order_by(Campus.id.asc())).all()
     return {"items": [public_model(item, ["id", "name", "code", "status"]) for item in items]}
 
@@ -123,11 +141,18 @@ def students(
     keyword: str | None = None,
     page: int = 1,
     page_size: int = 20,
+    actor: Actor = Depends(get_current_actor),
     db: Session = Depends(get_db),
 ) -> dict:
     query = select(Student)
     if campus_id is not None:
+        require_campus_member_scope(actor, campus_id)
         query = query.where(Student.campus_id == campus_id)
+    elif actor.role != "super_admin":
+        if actor.campus_id is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Campus scope is required")
+        require_campus_member_scope(actor, actor.campus_id)
+        query = query.where(Student.campus_id == actor.campus_id)
     if keyword:
         query = query.where(Student.name.contains(keyword))
     rows = db.scalars(query.order_by(Student.id.desc()).offset((page - 1) * page_size).limit(page_size)).all()
@@ -139,7 +164,12 @@ def students(
 
 
 @router.post("/students")
-def create_student(payload: StudentCreate, db: Session = Depends(get_db)) -> dict:
+def create_student(
+    payload: StudentCreate,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, payload.campus_id)
     student = Student(**payload.model_dump())
     db.add(student)
     db.commit()
@@ -148,10 +178,15 @@ def create_student(payload: StudentCreate, db: Session = Depends(get_db)) -> dic
 
 
 @router.get("/students/{student_id}")
-def student_detail(student_id: int, db: Session = Depends(get_db)) -> dict:
+def student_detail(
+    student_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
     student = db.get(Student, student_id)
     if student is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+    require_campus_scope(actor, student.campus_id)
     accounts = db.scalars(select(HourAccount).where(HourAccount.student_id == student_id)).all()
     return {
         "student": public_model(student, ["id", "campus_id", "name", "student_no", "gender", "phone", "status"]),
@@ -163,7 +198,12 @@ def student_detail(student_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 @router.post("/teachers")
-def create_teacher(payload: TeacherCreate, db: Session = Depends(get_db)) -> dict:
+def create_teacher(
+    payload: TeacherCreate,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, payload.campus_id)
     teacher = Teacher(**payload.model_dump())
     db.add(teacher)
     db.commit()
@@ -172,16 +212,30 @@ def create_teacher(payload: TeacherCreate, db: Session = Depends(get_db)) -> dic
 
 
 @router.get("/teachers")
-def teachers(campus_id: int | None = None, db: Session = Depends(get_db)) -> dict:
+def teachers(
+    campus_id: int | None = None,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
     query = select(Teacher)
     if campus_id is not None:
+        require_campus_scope(actor, campus_id)
         query = query.where(Teacher.campus_id == campus_id)
+    elif actor.role != "super_admin":
+        if actor.campus_id is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Campus scope is required")
+        query = query.where(Teacher.campus_id == actor.campus_id)
     items = db.scalars(query.order_by(Teacher.id.desc())).all()
     return {"items": [public_model(item, ["id", "campus_id", "name", "phone", "title", "status"]) for item in items]}
 
 
 @router.post("/courses")
-def create_course(payload: CourseCreate, db: Session = Depends(get_db)) -> dict:
+def create_course(
+    payload: CourseCreate,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, payload.campus_id)
     course = Course(**payload.model_dump())
     db.add(course)
     db.commit()
@@ -193,10 +247,20 @@ def create_course(payload: CourseCreate, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/courses")
-def courses(campus_id: int | None = None, db: Session = Depends(get_db)) -> dict:
+def courses(
+    campus_id: int | None = None,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
     query = select(Course)
     if campus_id is not None:
+        require_campus_member_scope(actor, campus_id)
         query = query.where(Course.campus_id == campus_id)
+    elif actor.role != "super_admin":
+        if actor.campus_id is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Campus scope is required")
+        require_campus_member_scope(actor, actor.campus_id)
+        query = query.where(Course.campus_id == actor.campus_id)
     items = db.scalars(query.order_by(Course.id.desc())).all()
     return {
         "items": [
@@ -210,7 +274,12 @@ def courses(campus_id: int | None = None, db: Session = Depends(get_db)) -> dict
 
 
 @router.post("/lessons")
-def create_lesson(payload: LessonCreateRequest, db: Session = Depends(get_db)) -> dict:
+def create_lesson(
+    payload: LessonCreateRequest,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, payload.campus_id)
     lesson = LessonService(db).create_lesson(
         **payload.model_dump(exclude={"student_ids"}),
         student_ids=payload.student_ids,
@@ -221,29 +290,45 @@ def create_lesson(payload: LessonCreateRequest, db: Session = Depends(get_db)) -
 
 
 @router.get("/lessons/{lesson_id}")
-def lesson(lesson_id: int, campus_id: int | None = None, db: Session = Depends(get_db)) -> dict:
+def lesson(
+    lesson_id: int,
+    campus_id: int | None = None,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
     item = db.get(Lesson, lesson_id)
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
     if campus_id is not None and item.campus_id != campus_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Lesson is not in this campus")
+    require_campus_scope(actor, item.campus_id)
     return lesson_detail(db, item)
 
 
 @router.get("/lessons")
-def lessons(campus_id: int, db: Session = Depends(get_db)) -> dict:
+def lessons(
+    campus_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, campus_id)
     items = db.scalars(select(Lesson).where(Lesson.campus_id == campus_id).order_by(Lesson.start_time.desc())).all()
     return {"items": [lesson_summary(item) for item in items]}
 
 
 @router.post("/hour-accounts")
-def create_hour_account(payload: HourAccountCreate, db: Session = Depends(get_db)) -> dict:
+def create_hour_account(
+    payload: HourAccountCreate,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, payload.campus_id)
     account = HourService(db).create_account(
         campus_id=payload.campus_id,
         student_id=payload.student_id,
         course_id=payload.course_id,
         initial_hours=payload.initial_hours,
-        operator_user_id=None,
+        operator_user_id=actor.user_id,
         reason=payload.reason,
     )
     db.commit()
@@ -256,8 +341,10 @@ def hour_accounts(
     campus_id: int,
     student_id: int | None = None,
     course_id: int | None = None,
+    actor: Actor = Depends(get_current_actor),
     db: Session = Depends(get_db),
 ) -> dict:
+    require_campus_scope(actor, campus_id)
     query = select(HourAccount).where(HourAccount.campus_id == campus_id)
     if student_id is not None:
         query = query.where(HourAccount.student_id == student_id)
@@ -273,12 +360,21 @@ def hour_accounts(
 
 
 @router.post("/hour-accounts/{account_id}/ledger")
-def create_hour_ledger(account_id: int, payload: HourLedgerCreate, db: Session = Depends(get_db)) -> dict:
+def create_hour_ledger(
+    account_id: int,
+    payload: HourLedgerCreate,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    account = db.get(HourAccount, account_id)
+    if account is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hour account not found")
+    require_campus_scope(actor, account.campus_id)
     result = HourService(db).create_ledger(
         account_id=account_id,
         change_type=payload.change_type,
         change_hours=payload.change_hours,
-        operator_user_id=payload.operator_user_id,
+        operator_user_id=actor.user_id,
         source="campus_manual",
         reason=payload.reason,
     )
@@ -291,7 +387,13 @@ def create_hour_ledger(account_id: int, payload: HourLedgerCreate, db: Session =
 
 
 @router.get("/hour-ledgers")
-def hour_ledgers(campus_id: int, student_id: int | None = None, db: Session = Depends(get_db)) -> dict:
+def hour_ledgers(
+    campus_id: int,
+    student_id: int | None = None,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, campus_id)
     query = select(HourLedger).where(HourLedger.campus_id == campus_id)
     if student_id is not None:
         query = query.where(HourLedger.student_id == student_id)
@@ -321,7 +423,12 @@ def hour_ledgers(campus_id: int, student_id: int | None = None, db: Session = De
 
 
 @router.get("/deduction-rules")
-def deduction_rules(campus_id: int, db: Session = Depends(get_db)) -> dict:
+def deduction_rules(
+    campus_id: int,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, campus_id)
     items = db.scalars(
         select(DeductionRule).where(DeductionRule.campus_id == campus_id).order_by(DeductionRule.id.asc())
     ).all()
@@ -347,7 +454,12 @@ def deduction_rules(campus_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 @router.post("/deduction-rules")
-def upsert_deduction_rule(payload: DeductionRuleUpsert, db: Session = Depends(get_db)) -> dict:
+def upsert_deduction_rule(
+    payload: DeductionRuleUpsert,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, payload.campus_id)
     rule = db.scalar(
         select(DeductionRule).where(
             DeductionRule.campus_id == payload.campus_id,
@@ -380,7 +492,12 @@ def upsert_deduction_rule(payload: DeductionRuleUpsert, db: Session = Depends(ge
 
 
 @router.post("/devices")
-def create_device(payload: DeviceCreate, db: Session = Depends(get_db)) -> dict:
+def create_device(
+    payload: DeviceCreate,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_campus_scope(actor, payload.campus_id)
     data = payload.model_dump(exclude={"device_secret"})
     data["secret_hash"] = hashlib.sha256(payload.device_secret.encode("utf-8")).hexdigest()
     device = Device(**data)
@@ -394,10 +511,19 @@ def create_device(payload: DeviceCreate, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/devices")
-def devices(campus_id: int | None = None, db: Session = Depends(get_db)) -> dict:
+def devices(
+    campus_id: int | None = None,
+    actor: Actor = Depends(get_current_actor),
+    db: Session = Depends(get_db),
+) -> dict:
     query = select(Device)
     if campus_id is not None:
+        require_campus_scope(actor, campus_id)
         query = query.where(Device.campus_id == campus_id)
+    elif actor.role != "super_admin":
+        if actor.campus_id is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Campus scope is required")
+        query = query.where(Device.campus_id == actor.campus_id)
     items = db.scalars(query.order_by(Device.id.desc())).all()
     return {
         "items": [

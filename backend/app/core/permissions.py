@@ -50,6 +50,15 @@ def optional_actor(
 def require_campus_scope(actor: Actor, campus_id: int) -> None:
     if actor.role == "super_admin":
         return
+    require_role(actor, {"campus_admin"})
+    if actor.campus_id != campus_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden campus scope")
+
+
+def require_campus_member_scope(actor: Actor, campus_id: int) -> None:
+    if actor.role == "super_admin":
+        return
+    require_role(actor, {"campus_admin", "teacher"})
     if actor.campus_id != campus_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden campus scope")
 
@@ -57,6 +66,28 @@ def require_campus_scope(actor: Actor, campus_id: int) -> None:
 def require_role(actor: Actor, roles: set[str]) -> None:
     if actor.role not in roles:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden role")
+
+
+def require_teacher_scope(actor: Actor, teacher_id: int) -> None:
+    if actor.role == "super_admin":
+        return
+    require_role(actor, {"teacher"})
+    if actor.teacher_id != teacher_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden teacher scope")
+
+
+def require_student_scope(actor: Actor, student_id: int) -> None:
+    if actor.role == "super_admin":
+        return
+    require_role(actor, {"learner", "guardian", "student"})
+    if actor.student_id != student_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden student scope")
+
+
+def require_any_role(actor: Actor, roles: set[str]) -> None:
+    if actor.role == "super_admin":
+        return
+    require_role(actor, roles)
 
 
 def _user_id_from_subject(subject: str) -> int:

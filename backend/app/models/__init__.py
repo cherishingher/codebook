@@ -1,7 +1,7 @@
 from app.models.attendance import AttendanceRecord, PunchEvent
 from app.models.campus import Campus
 from app.models.course import Course
-from app.models.device import Device
+from app.models.device import Device, DeviceNonce
 from app.models.face import FaceProfile
 from app.models.hour import DeductionRule, HourAccount, HourLedger
 from app.models.lesson import Lesson, LessonStudent
@@ -17,6 +17,7 @@ __all__ = [
     "Course",
     "DeductionRule",
     "Device",
+    "DeviceNonce",
     "FaceProfile",
     "GuardianStudentRelation",
     "HourAccount",
@@ -31,4 +32,3 @@ __all__ = [
     "User",
     "UserRole",
 ]
-

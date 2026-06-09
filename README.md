@@ -36,8 +36,13 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+codebook-init-db
 uvicorn app.main:app --reload
 ```
+
+Run `codebook-init-db` after pulling backend updates in a deployed environment.
+It is idempotent and creates newly added tables such as device nonce tracking
+without dropping existing data.
 
 Camera agent:
 
@@ -48,4 +53,3 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 python -m agent.main
 ```
-
