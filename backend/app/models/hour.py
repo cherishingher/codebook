@@ -1,6 +1,8 @@
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, Numeric, String, UniqueConstraint
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -21,6 +23,7 @@ class HourAccount(TimestampMixin, Base):
 
 class HourLedger(Base):
     __tablename__ = "hour_ledgers"
+    __table_args__ = (UniqueConstraint("attendance_record_id", "change_type", "source"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     campus_id: Mapped[int] = mapped_column(ForeignKey("campuses.id"), nullable=False, index=True)
@@ -37,6 +40,7 @@ class HourLedger(Base):
     source: Mapped[str] = mapped_column(String(30), default="system")
     reason: Mapped[str | None] = mapped_column(String)
     related_ledger_id: Mapped[int | None] = mapped_column(ForeignKey("hour_ledgers.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class DeductionRule(TimestampMixin, Base):
@@ -52,4 +56,3 @@ class DeductionRule(TimestampMixin, Base):
     absent_action: Mapped[str] = mapped_column(String(30), default="manual_required")
     leave_action: Mapped[str] = mapped_column(String(30), default="not_deduct")
     exception_action: Mapped[str] = mapped_column(String(30), default="manual_required")
-

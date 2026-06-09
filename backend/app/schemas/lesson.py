@@ -5,7 +5,9 @@ from pydantic import BaseModel, Field
 
 
 class LessonCreateRequest(BaseModel):
+    campus_id: int
     course_id: int
+    teacher_id: int
     title: str
     classroom_name: str | None = None
     start_time: datetime
@@ -23,4 +25,4 @@ class AttendanceConfirmRequest(BaseModel):
     deduction_action: str
     deducted_hours: Decimal = Field(default=Decimal("0.00"), ge=0)
     reason: str
-
+    operator_user_id: int | None = None

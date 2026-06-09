@@ -9,6 +9,7 @@ __pycache__/
 .mypy_cache/
 .venv/
 venv/
+*.egg-info/
 node_modules/
 dist/
 build/
@@ -19,4 +20,3 @@ storage/
 *.db
 backend/alembic/versions/*.py
 !backend/alembic/versions/.gitkeep
-
